@@ -1,75 +1,21 @@
-# OpenFrame Overview
+# 💡 A Low-Power Microwatt Core Using Clock Gating
 
-The OpenFrame Project provides an empty harness chip that differs significantly from the Caravel and Caravan designs. Unlike Caravel and Caravan, which include integrated SoCs and additional features, OpenFrame offers only the essential padframe, providing users with a clean slate for their custom designs.
+This repository contains the RTL and design files for a power-optimized version of the open-source Microwatt CPU core, enhanced with fine-grained clock gating to significantly reduce dynamic power consumption.
 
-<img width="256" alt="Screenshot 2024-06-24 at 12 53 39 PM" src="https://github.com/efabless/openframe_timer_example/assets/67271180/ff58b58b-b9c8-4d5e-b9bc-bf344355fa80">
+---
 
-## Key Characteristics of OpenFrame
+## 📝 Overview
 
-1. **Minimalist Design:** 
-   - No integrated SoC or additional circuitry.
-   - Only includes the padframe, a power-on-reset circuit, and a digital ROM containing the 32-bit project ID.
+This project creates a power-efficient version of the open-source **Microwatt CPU core**, making it suitable for energy-sensitive applications like IoT and edge devices. The standard Microwatt core is designed for functionality, not for low-power operation. This work re-engineers the core at the hardware level by implementing **fine-grained clock gating**, a highly effective technique for reducing dynamic power. The result will be a functionally identical processor that consumes significantly less power, unlocking its use in a new class of battery-powered and thermally constrained environments while remaining fully compliant with the OpenPOWER ISA.
 
-2. **Padframe Compatibility:**
-   - The padframe design and pin placements match those of the Caravel and Caravan chips, ensuring compatibility and ease of transition between designs.
-   - Pin types are identical, with power and ground pins positioned similarly and the same power domains available.
+---
 
-3. **Flexibility:**
-   - Provides full access to all GPIO controls.
-   - Maximizes the user project area, allowing for greater customization and integration of alternative SoCs or user-specific projects at the same hierarchy level.
+## 🏛️ Architecture
 
-4. **Simplified I/O:**
-   - Pins that previously connected to CPU functions (e.g., flash controller interface, SPI interface, UART) are now repurposed as general-purpose I/O, offering flexibility for various applications.
+The SoC architecture remains centered on the Microwatt CPU, but its implementation is enhanced with a distributed, power-aware design. This is not a single block but a systemic modification where the core's own activity is used to manage its power consumption intelligently. High-activity modules are redesigned to shut down their internal clocks when idle, preventing the wasteful power consumption that occurs from unnecessary transistor switching.
 
-The OpenFrame harness is ideal for those looking to implement custom SoCs or integrate user projects without the constraints of an existing SoC.
+### The Controller: Microwatt CPU Core
+The system is based on the `Microwatt` core, an open-source, 64-bit processor that implements the **OpenPOWER Instruction Set Architecture (ISA)**. In this project, it serves two roles: it is both the subject of the optimization and the controller that benefits from it. Its baseline functionality will remain unchanged, ensuring that all existing software and toolchains are fully compatible with the final, low-power design.
 
-## Features
-
-1. 44 configurable GPIOs.
-2. User area of approximately 15mm².
-3. Supports digital, analog, or mixed-signal designs.
-
-# openframe_timer_example
-
-This example implements a simple timer and connects it to the GPIOs.
-
-## Installation and Setup
-
-First, clone the repository:
-
-```bash
-git clone https://github.com/efabless/openframe_timer_example.git
-cd openframe_timer_example
-```
-
-Then, download all dependencies:
-
-```bash
-make setup
-```
-
-## Hardening the Design
-
-In this example, we will harden the timer. You will need to harden your own design similarly.
-
-```bash
-make user_proj_timer
-```
-
-Once you have hardened your design, integrate it into the OpenFrame wrapper:
-
-```bash
-make openframe_project_wrapper
-```
-
-## Important Notes
-
-1. **Connecting to Power:**
-   - Ensure your design is connected to power using the power pins on the wrapper.
-   - Use the `vccd1_connection` and `vssd1_connection` macros, which contain the necessary vias and nets for power connections.
-
-2. **Flattening the Design:**
-   - If you plan to flatten your design within the `openframe_project_wrapper`, do not buffer the analog pins using standard cells.
-
-3. **Running Custom Steps:**
-   - Execute the custom step in OpenLane that copies the power pins from the template DEF. If this step is skipped, the precheck will fail, and your design will not be powered.
+### The Engine: Fine-Grained Clock Gating
+The "engine" of the power savings is the implementation of fine-grained clock gating logic. This involves analyzing the processor's design to identify components that do not operate on every clock cycle and then wrapping their registers in **Integrated Clock Gating (ICG)** cells. This logic acts as a smart switch
